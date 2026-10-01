@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulado de Farmacologia Clínica</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050907;
+  --surface:#0A1611;
+  --surface-2:#0E1E17;
+  --surface-3:#12271E;
+  --line:#18302A;
+  --line-2:#224036;
+  --primary:#14553B;
+  --primary-h:#1A6A4A;
+  --accent:#6FD8BC;
+  --accent-dim:rgba(111,216,188,.12);
+  --text:#E2EDE8;
+  --text-2:#B7CAC1;
+  --muted:#7F978C;
+  --ok:#3FBF7F;
+  --ok-bg:rgba(63,191,127,.09);
+  --err:#E0575C;
+  --err-bg:rgba(224,87,92,.09);
+  --r:10px;
+  --r-s:7px;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  background:rgba(5,9,7,.92);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px);
+}
+.topbar-in{
+  max-width:880px;margin:0 auto;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 18px;
+}
+.brand{font-weight:600;font-size:14px;color:var(--text-2);letter-spacing:.01em;white-space:nowrap;margin-right:auto}
+.brand b{color:var(--accent);font-weight:600}
+.tb-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  height:34px;padding:0 12px;border-radius:var(--r-s);
+  border:1px solid var(--line-2);color:var(--text-2);font-size:13.5px;
+  transition:border-color .15s,color .15s,background .15s;
+  white-space:nowrap;
+}
+.tb-btn:hover{border-color:var(--accent);color:var(--text)}
+.tb-btn.primary{background:var(--primary);border-color:var(--primary);color:#EAF6F0}
+.tb-btn.primary:hover{background:var(--primary-h);border-color:var(--primary-h)}
+.tb-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
+.counter{font-family:var(--mono);font-size:13px;color:var(--muted);padding:0 6px;white-space:nowrap}
+.counter strong{color:var(--text);font-weight:500}
+.progress{height:2px;background:var(--line);position:relative}
+.progress>i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);width:0;transition:width .3s ease}
+.hide-sm{display:inline}
+@media (max-width:640px){
+  .hide-sm{display:none}
+  .topbar-in{padding:9px 12px;gap:5px}
+  .tb-btn{padding:0 9px;font-size:12.5px}
+  .brand{font-size:13px}
+  .counter{padding:0 2px;font-size:12px}
+}
+
+@media (max-width:440px){
+  .brand{display:none}
+  .topbar-in{justify-content:space-between}
+}
+
+/* ---------- Map ---------- */
+.map{
+  position:absolute;right:max(12px,calc((100vw - 880px)/2 + 18px));top:calc(100% + 8px);
+  width:min(340px,calc(100vw - 24px));
+  background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);
+  padding:14px;display:none;box-shadow:0 18px 40px rgba(0,0,0,.55);
+}
+.map.open{display:block}
+.map-filters{display:flex;gap:6px;margin-bottom:12px}
+.chip{font-size:12.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--line-2);color:var(--muted)}
+.chip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.map-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cell{
+  font-family:var(--mono);font-size:12.5px;height:34px;border-radius:6px;
+  border:1px solid var(--line-2);color:var(--text-2);background:var(--surface-2)
+}
+.cell:hover{border-color:var(--accent)}
+.cell.ok{border-color:rgba(63,191,127,.55);color:var(--ok);background:var(--ok-bg)}
+.cell.err{border-color:rgba(224,87,92,.55);color:var(--err);background:var(--err-bg)}
+.cell.cur{box-shadow:0 0 0 2px var(--accent)}
+.cell.dim{opacity:.35}
+.map-legend{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--muted)}
+.map-legend span::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:1px;border:1px solid var(--line-2)}
+.map-legend .l-ok::before{background:var(--ok);border-color:var(--ok)}
+.map-legend .l-err::before{background:var(--err);border-color:var(--err)}
+.map-empty{font-size:13px;color:var(--muted);padding:8px 2px}
+
+/* ---------- Layout ---------- */
+main{max-width:880px;margin:0 auto;padding:36px 18px 72px}
+@media (max-width:640px){main{padding:22px 12px 56px}}
+.view{display:none}
+.view.on{display:block}
+
+/* ---------- Start ---------- */
+.start{
+  min-height:calc(100vh - 170px);display:flex;flex-direction:column;justify-content:center;
+  max-width:560px;
+}
+.start h1{font-size:clamp(34px,6vw,52px);line-height:1.08;font-weight:600;letter-spacing:-.02em;margin-bottom:18px}
+.start h1 span{display:block;color:var(--accent);font-weight:500}
+.start p{color:var(--text-2);max-width:48ch;margin-bottom:28px}
+.stats{display:flex;gap:28px;margin-bottom:34px;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat .n{font-family:var(--mono);font-size:26px;font-weight:500;color:var(--text);line-height:1.1}
+.stat .l{font-size:13px;color:var(--muted)}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:46px;padding:0 22px;border-radius:var(--r-s);font-weight:500;
+  border:1px solid var(--line-2);color:var(--text);transition:background .15s,border-color .15s
+}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#EFF8F3}
+.btn.primary:hover:not(:disabled){background:var(--primary-h);border-color:var(--primary-h)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px}
+.keys{margin-top:34px;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px 18px}
+kbd{
+  font-family:var(--mono);font-size:11.5px;padding:2px 6px;border:1px solid var(--line-2);border-bottom-width:2px;
+  border-radius:4px;color:var(--text-2);background:var(--surface-2);margin-right:4px
+}
+
+/* ---------- Question ---------- */
+.q-head{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+.q-num{font-family:var(--mono);font-size:13px;color:var(--accent)}
+.q-num em{font-style:normal;color:var(--muted)}
+.mode-tag{font-family:var(--mono);font-size:11.5px;color:var(--err);border:1px solid rgba(224,87,92,.4);border-radius:4px;padding:1px 7px}
+.q-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:28px 30px}
+@media (max-width:640px){.q-card{padding:20px 16px}}
+.q-case{color:var(--text-2);font-size:16px;line-height:1.72;max-width:70ch}
+.q-ask{margin-top:18px;font-weight:600;font-size:16.5px;color:var(--text);max-width:70ch}
+.opts{margin-top:22px;display:flex;flex-direction:column;gap:9px}
+.opt{
+  display:flex;gap:14px;align-items:flex-start;text-align:left;width:100%;
+  padding:13px 16px;border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--surface-2);
+  transition:border-color .15s,background .15s;line-height:1.5
+}
+.opt:hover:not([disabled]){border-color:var(--accent);background:var(--surface-3)}
+.opt[disabled]{cursor:default}
+.opt .k{
+  flex:none;font-family:var(--mono);font-size:13px;font-weight:500;width:26px;height:26px;border-radius:5px;
+  display:grid;place-items:center;border:1px solid var(--line-2);color:var(--text-2);margin-top:-1px
+}
+.opt .t{color:var(--text)}
+.opt.correct{border-color:var(--ok);background:var(--ok-bg)}
+.opt.correct .k{background:var(--ok);border-color:var(--ok);color:#04130B}
+.opt.wrong{border-color:var(--err);background:var(--err-bg)}
+.opt.wrong .k{background:var(--err);border-color:var(--err);color:#1A0506}
+.opt.faded{opacity:.55}
+
+/* ---------- Feedback ---------- */
+.fb{margin-top:22px;border-top:1px solid var(--line);padding-top:20px;display:none}
+.fb.on{display:block;animation:fbIn .25s ease}
+@keyframes fbIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fb.on{animation:none}.progress>i{transition:none}}
+.fb-status{display:flex;align-items:center;flex-wrap:wrap;gap:10px;font-weight:600;margin-bottom:12px}
+.fb-status .dot{width:9px;height:9px;border-radius:50%}
+.fb-status.ok{color:var(--ok)}.fb-status.ok .dot{background:var(--ok)}
+.fb-status.err{color:var(--err)}.fb-status.err .dot{background:var(--err)}
+.fb-status .gab{font-family:var(--mono);font-weight:500;font-size:13px;color:var(--muted);margin-left:auto}
+.fb-block{margin-top:14px}
+.fb-block h4{font-size:13px;font-weight:600;color:var(--accent);margin-bottom:6px;letter-spacing:.01em}
+.fb-block p{color:var(--text-2);font-size:15px;max-width:72ch}
+.fb-block p b{color:var(--text);font-weight:600}
+.fb-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+.fb-list li{display:flex;gap:10px;font-size:14.5px;color:var(--text-2)}
+.fb-list li .k{flex:none;font-family:var(--mono);font-size:12.5px;color:var(--err);width:18px;padding-top:1px}
+
+/* ---------- Nav ---------- */
+.q-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px}
+.q-nav .hint{font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){.q-nav .hint{display:none}}
+
+/* ---------- Result ---------- */
+.res{max-width:620px}
+.res h2{font-size:15px;font-weight:500;color:var(--muted);margin-bottom:6px}
+.res .pct{font-family:var(--mono);font-size:clamp(64px,14vw,104px);font-weight:500;line-height:1;letter-spacing:-.03em;color:var(--text)}
+.res .pct small{font-size:.38em;color:var(--muted);margin-left:4px}
+.res .verdict{color:var(--text-2);margin:14px 0 26px;max-width:52ch}
+.res-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--line);margin-bottom:22px}
+.res-bar i{display:block;height:100%}
+.res-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:30px}
+.res-cell{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:14px 16px}
+.res-cell .n{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1.1}
+.res-cell .l{font-size:13px;color:var(--muted)}
+.res-cell.ok .n{color:var(--ok)}
+.res-cell.err .n{color:var(--err)}
+
+/* ---------- Modal ---------- */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);padding:24px;max-width:420px;width:100%}
+.modal h3{font-size:17px;font-weight:600;margin-bottom:8px}
+.modal p{color:var(--text-2);font-size:15px;margin-bottom:20px}
+.modal .btn-row{justify-content:flex-end}
+.modal .btn{height:40px;padding:0 16px}
+.btn.danger{background:#5A1B1E;border-color:#6E2226;color:#FBE9EA}
+.btn.danger:hover{background:#6E2226;border-color:var(--err)}
+</style>
+</head>
+<body>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-in">
+    <div class="brand">Farmacologia <b>Clínica</b></div>
+    <button class="tb-btn" id="btnHome" title="Início">Início</button>
+    <span class="counter" id="counter"></span>
+    <button class="tb-btn" id="btnMap" aria-expanded="false" title="Mapa de questões (M)">Mapa</button>
+    <button class="tb-btn" id="btnReset" title="Reiniciar simulado">Reiniciar</button>
+    <button class="tb-btn primary" id="btnFinish" title="Finalizar e ver resultado">Finalizar</button>
+  </div>
+  <div class="progress"><i id="prog"></i></div>
+  <div class="map" id="map" role="dialog" aria-label="Mapa de questões">
+    <div class="map-filters">
+      <button class="chip on" data-f="all">Todas</button>
+      <button class="chip" data-f="wrong">Erradas</button>
+      <button class="chip" data-f="blank">Em branco</button>
+    </div>
+    <div class="map-grid" id="mapGrid"></div>
+    <div class="map-legend"><span class="l-ok">Acerto</span><span class="l-err">Erro</span><span>Em branco</span></div>
+  </div>
+</header>
+
+<main>
+  <!-- START -->
+  <section class="view" id="vStart">
+    <div class="start">
+      <h1>Simulado de <span>Farmacologia Clínica</span></h1>
+      <p>50 questões inéditas de Farmacologia Clínica, elaboradas com o padrão estrutural do PDF de revisão e conteúdo baseado exclusivamente nos materiais de estudo fornecidos. Uma questão por vez, com correção e explicação didática após cada resposta.</p>
+      <div class="stats">
+        <div class="stat"><div class="n" id="stTotal">50</div><div class="l">questões</div></div>
+        <div class="stat"><div class="n">4</div><div class="l">alternativas</div></div>
+        <div class="stat"><div class="n" id="stDone">0</div><div class="l">respondidas</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="btnStart">Iniciar</button>
+        <button class="btn" id="btnRestartFromStart" style="display:none">Começar do zero</button>
+      </div>
+      <div class="keys">
+        <span><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd>responder</span>
+        <span><kbd>Enter</kbd>avançar</span>
+        <span><kbd>←</kbd><kbd>→</kbd>navegar</span>
+        <span><kbd>M</kbd>mapa</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUESTION -->
+  <section class="view" id="vQuiz">
+    <div class="q-head">
+      <span class="q-num" id="qNum"></span>
+      <span class="mode-tag" id="modeTag" style="display:none">refazendo erradas</span>
+    </div>
+    <article class="q-card">
+      <p class="q-case" id="qCase"></p>
+      <p class="q-ask" id="qAsk"></p>
+      <div class="opts" id="qOpts"></div>
+      <div class="fb" id="fb"></div>
+    </article>
+    <div class="q-nav">
+      <button class="btn" id="btnPrev">Anterior</button>
+      <span class="hint"><kbd>Enter</kbd>próxima</span>
+      <button class="btn primary" id="btnNext">Próxima</button>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="view" id="vResult">
+    <div class="res">
+      <h2>Resultado do simulado</h2>
+      <div class="pct" id="rPct">0<small>%</small></div>
+      <p class="verdict" id="rVerdict"></p>
+      <div class="res-bar" id="rBar"></div>
+      <div class="res-grid">
+        <div class="res-cell ok"><div class="n" id="rOk">0</div><div class="l">acertos</div></div>
+        <div class="res-cell err"><div class="n" id="rErr">0</div><div class="l">erros</div></div>
+        <div class="res-cell"><div class="n" id="rBlank">0</div><div class="l">em branco</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn primary" id="btnReview">Revisar questões</button>
+        <button class="btn" id="btnRedo">Refazer erradas</button>
+        <button class="btn" id="btnResHome">Início</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="modal-bg" id="modal">
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle"></h3>
+    <p id="mText"></p>
+    <div class="btn-row">
+      <button class="btn" id="mCancel">Cancelar</button>
+      <button class="btn primary" id="mOk">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   BANCO DE QUESTÕES — 50 questões inéditas
+   c = índice da alternativa correta (0=A, 1=B, 2=C, 3=D)
+   ========================================================= */
+const Q = [
+  {
+    "caso": "Um paciente com hipertensão participa de um estudo no qual dois fármacos são comparados em um mesmo modelo de resposta. O Enalaprilat apresenta CE50 de 2 nM, enquanto a Losartana apresenta CE50 de 20 nM. Ao final da curva dose–resposta, ambos atingem 100% do bloqueio máximo do sistema analisado.",
+    "pergunta": "A interpretação farmacodinâmica correta desses resultados é:",
+    "alts": [
+      "O Enalaprilat é mais potente, porque possui menor CE50, mas os dois fármacos têm a mesma eficácia, pois atingem o mesmo Emáx.",
+      "A Losartana é mais potente porque uma CE50 maior indica que o efeito máximo é alcançado com maior intensidade.",
+      "O Enalaprilat é menos eficaz porque necessita de menor concentração para atingir 50% da resposta máxima.",
+      "Os dois têm eficácias diferentes porque a CE50 é o parâmetro que determina o teto de resposta."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> potência é relacionada à CE50: quanto menor a CE50, menor a concentração necessária para produzir uma determinada magnitude de efeito. A eficácia é definida pelo Emáx, isto é, pelo teto de resposta alcançável. Como os dois atingem 100% de bloqueio, possuem a mesma eficácia, mas o Enalaprilat é mais potente.",
+    "erros": {
+      "1": "A Losartana é mais potente porque uma CE50 maior indica que o efeito máximo é alcançado com maior intensidade.",
+      "2": "O Enalaprilat é menos eficaz porque necessita de menor concentração para atingir 50% da resposta máxima.",
+      "3": "Os dois têm eficácias diferentes porque a CE50 é o parâmetro que determina o teto de resposta."
+    }
+  },
+  {
+    "caso": "Uma nova molécula é adicionada a um experimento com um agonista. Na presença da nova molécula, a curva dose–resposta do agonista desloca-se para a direita: a EC50 aumenta, porém o Emáx permanece inalterado. Quando a concentração do agonista é elevada, o efeito máximo volta a ser alcançado.",
+    "pergunta": "Qual mecanismo melhor explica o padrão observado?",
+    "alts": [
+      "Antagonismo não competitivo, com redução irreversível do Emáx.",
+      "Antagonismo competitivo, com redução da potência aparente e preservação do Emáx.",
+      "Agonismo pleno, com aumento simultâneo da eficácia do agonista original.",
+      "Down-regulation, que necessariamente reduz o Emáx mesmo quando a dose do agonista é aumentada."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> deslocamento da curva para a direita com Emáx preservado é o padrão descrito para antagonismo competitivo. O antagonista disputa o mesmo sítio e o efeito pode ser superado por concentrações maiores do agonista.",
+    "erros": {
+      "0": "Antagonismo não competitivo, com redução irreversível do Emáx.",
+      "2": "Agonismo pleno, com aumento simultâneo da eficácia do agonista original.",
+      "3": "Down-regulation, que necessariamente reduz o Emáx mesmo quando a dose do agonista é aumentada."
+    }
+  },
+  {
+    "caso": "Durante um ensaio, um antagonista é administrado e, mesmo com aumento progressivo da concentração do agonista, a resposta máxima do sistema cai de forma sustentada. Não há recuperação do teto de efeito com doses maiores do agonista.",
+    "pergunta": "Qual interpretação é mais compatível com essa curva dose–resposta?",
+    "alts": [
+      "Há redução do Emáx, compatível com antagonismo não competitivo ou irreversível.",
+      "Trata-se de agonismo parcial isolado, que obrigatoriamente aumenta o Emáx do agonista pleno.",
+      "O achado caracteriza indução enzimática, porque o metabolismo do agonista foi acelerado.",
+      "Há apenas redução de potência, com aumento de EC50 e Emáx preservado."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> quando o teto de resposta cai, o fenômeno importante é a redução do Emáx. O material relaciona esse padrão ao antagonismo não competitivo ou irreversível, que não pode ser superado simplesmente elevando a dose do agonista.",
+    "erros": {
+      "1": "Trata-se de agonismo parcial isolado, que obrigatoriamente aumenta o Emáx do agonista pleno.",
+      "2": "O achado caracteriza indução enzimática, porque o metabolismo do agonista foi acelerado.",
+      "3": "Há apenas redução de potência, com aumento de EC50 e Emáx preservado."
+    }
+  },
+  {
+    "caso": "Um pesquisador compara quatro fármacos. O primeiro produz alteração do potencial de membrana em milissegundos; o segundo, por receptor de sete domínios transmembrana, ativa proteína G; o terceiro desencadeia dimerização e autofosforilação de um receptor com domínio tirosina-quinase; o quarto altera transcrição gênica por receptor intracelular.",
+    "pergunta": "Qual associação entre mecanismo e tempo de resposta está correta?",
+    "alts": [
+      "GPCR → milissegundos; receptor nuclear → segundos; canais iônicos → horas a dias; receptor ligado a quinase → minutos.",
+      "Canais iônicos controlados por ligante → milissegundos; GPCR → segundos; receptor ligado a quinase → minutos a horas; receptor nuclear → horas a dias.",
+      "Receptor nuclear → milissegundos; receptor ligado a quinase → segundos; GPCR → horas a dias; canal iônico → minutos.",
+      "Todos os quatro tipos de receptores apresentam velocidade de resposta semelhante porque dependem de proteínas intracelulares."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o tempo de resposta acompanha a arquitetura do receptor e sua via de sinalização. Canais iônicos alteram fluxo iônico diretamente e são muito rápidos; GPCRs utilizam segundos mensageiros; receptores ligados a quinases desencadeiam cascatas intermediárias; receptores nucleares dependem de alteração de transcrição gênica e, portanto, respondem mais lentamente.",
+    "erros": {
+      "0": "GPCR → milissegundos; receptor nuclear → segundos; canais iônicos → horas a dias; receptor ligado a quinase → minutos.",
+      "2": "Receptor nuclear → milissegundos; receptor ligado a quinase → segundos; GPCR → horas a dias; canal iônico → minutos.",
+      "3": "Todos os quatro tipos de receptores apresentam velocidade de resposta semelhante porque dependem de proteínas intracelulares."
+    }
+  },
+  {
+    "caso": "Uma pessoa com asma em uso crônico de salbutamol passa a precisar de doses maiores para obter o mesmo alívio. Em estudo funcional, a curva do agonista desloca-se para a direita e a EC50 aumenta, mas o Emáx continua preservado.",
+    "pergunta": "Qual mecanismo melhor descreve esse padrão?",
+    "alts": [
+      "Aumento da potência do salbutamol por modulação alostérica positiva.",
+      "Antagonismo não competitivo irreversível, que reduz obrigatoriamente o Emáx.",
+      "Indução do receptor, aumentando o número de receptores e deslocando a curva para a esquerda.",
+      "Tolerância associada à dessensibilização e down-regulation, com aumento da CE50 e preservação do Emáx."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material descreve que a tolerância com uso crônico produz redução gradual da resposta e aumento da CE50. A curva vai para a direita, enquanto o Emáx é preservado quando doses suficientemente altas são administradas.",
+    "erros": {
+      "0": "Aumento da potência do salbutamol por modulação alostérica positiva.",
+      "1": "Antagonismo não competitivo irreversível, que reduz obrigatoriamente o Emáx.",
+      "2": "Indução do receptor, aumentando o número de receptores e deslocando a curva para a esquerda."
+    }
+  },
+  {
+    "caso": "Uma paciente em uso estável de Varfarina inicia um produto à base de Erva-de-São-João. Algumas semanas depois, o INR, antes estável, cai de forma importante. O médico suspeita que a exposição ao anticoagulante tenha diminuído.",
+    "pergunta": "Qual explicação está mais de acordo com a farmacocinética apresentada nos materiais?",
+    "alts": [
+      "O efeito decorre de aumento da ligação da Varfarina à albumina, que reduz sua atividade.",
+      "A indução enzimática é um processo instantâneo que ocorre nas primeiras horas e, por isso, o INR cai imediatamente após a primeira dose.",
+      "A Erva-de-São-João inibe imediatamente o CYP e eleva a concentração da Varfarina.",
+      "A Erva-de-São-João promove indução enzimática, aumentando a atividade de CYP e a depuração da Varfarina, com queda de sua exposição e do INR."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material descreve a Erva-de-São-João como indutor de CYP. A indução aumenta a atividade enzimática e, com isso, a depuração do fármaco-alvo; a concentração cai e pode ocorrer falha terapêutica. O processo de indução é mais lento, levando dias a semanas.",
+    "erros": {
+      "0": "O efeito decorre de aumento da ligação da Varfarina à albumina, que reduz sua atividade.",
+      "1": "A indução enzimática é um processo instantâneo que ocorre nas primeiras horas e, por isso, o INR cai imediatamente após a primeira dose.",
+      "2": "A Erva-de-São-João inibe imediatamente o CYP e eleva a concentração da Varfarina."
+    }
+  },
+  {
+    "caso": "Um paciente com doença renal crônica usa um fármaco cuja eliminação depende predominantemente do rim. Durante um episódio de desidratação e queda da taxa de filtração glomerular, a dose de manutenção permanece inalterada.",
+    "pergunta": "Qual mudança farmacocinética é mais esperada?",
+    "alts": [
+      "A queda da TFG aumenta a biodisponibilidade oral, mas não altera a concentração plasmática em estado estacionário.",
+      "A redução da função renal aumenta automaticamente a excreção do fármaco por maior secreção tubular.",
+      "A redução do clearance renal favorece acúmulo do fármaco e pode transformar uma dose previamente segura em uma dose tóxica.",
+      "A disfunção renal reduz o volume de distribuição de qualquer fármaco, independentemente de suas propriedades."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> para fármacos de eliminação renal, a queda da TFG reduz o clearance. Com menor depuração, a mesma dose de manutenção produz maior exposição e risco de acúmulo. O material destaca que a função renal é dinâmica e pode mudar rapidamente em desidratação, sepse, AINEs ou contraste.",
+    "erros": {
+      "0": "A queda da TFG aumenta a biodisponibilidade oral, mas não altera a concentração plasmática em estado estacionário.",
+      "1": "A redução da função renal aumenta automaticamente a excreção do fármaco por maior secreção tubular.",
+      "3": "A disfunção renal reduz o volume de distribuição de qualquer fármaco, independentemente de suas propriedades."
+    }
+  },
+  {
+    "caso": "Um paciente com quadro de anasarca recebe um fármaco hidrofílico distribuído principalmente no compartimento extracelular. Após a expansão acentuada desse compartimento, a concentração plasmática inicial do medicamento fica abaixo do esperado.",
+    "pergunta": "Qual explicação é a mais adequada?",
+    "alts": [
+      "O aumento do volume de distribuição dilui o fármaco hidrofílico no espaço extracelular expandido, reduzindo a concentração plasmática.",
+      "A expansão de líquido extracelular necessariamente aumenta o clearance hepático do fármaco.",
+      "A anasarca aumenta apenas a ligação do fármaco à albumina e, por isso, reduz sua absorção intestinal.",
+      "Fármacos hidrofílicos permanecem exclusivamente dentro do plasma, portanto o edema não altera seu comportamento."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material usa a anasarca como exemplo de aumento importante do volume de distribuição. Em fármacos hidrofílicos, a expansão do líquido extracelular pode diluir o fármaco, reduzindo sua concentração plasmática e podendo comprometer a eficácia.",
+    "erros": {
+      "1": "A expansão de líquido extracelular necessariamente aumenta o clearance hepático do fármaco.",
+      "2": "A anasarca aumenta apenas a ligação do fármaco à albumina e, por isso, reduz sua absorção intestinal.",
+      "3": "Fármacos hidrofílicos permanecem exclusivamente dentro do plasma, portanto o edema não altera seu comportamento."
+    }
+  },
+  {
+    "caso": "Um homem de 24 anos apresenta delírios persecutórios e alucinações auditivas após quadro psicótico de início recente. A equipe discute as vias dopaminérgicas envolvidas na psicose.",
+    "pergunta": "Qual alteração neurobiológica, conforme o material, está mais diretamente relacionada aos sintomas positivos?",
+    "alts": [
+      "Hiperatividade da via tuberoinfundibular, levando à redução da prolactina.",
+      "Hipoatividade da via nigroestriatal, responsável pelo controle motor voluntário.",
+      "Hipoatividade da via mesolímbica, que explica principalmente sintomas cognitivos.",
+      "Hiperatividade da via mesolímbica, que projeta da VTA para o núcleo accumbens."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material associa hiperatividade mesolímbica a sintomas positivos, como delírios e alucinações. Já a hipoatividade mesocortical é relacionada aos sintomas negativos e cognitivos.",
+    "erros": {
+      "0": "Hiperatividade da via tuberoinfundibular, levando à redução da prolactina.",
+      "1": "Hipoatividade da via nigroestriatal, responsável pelo controle motor voluntário.",
+      "2": "Hipoatividade da via mesolímbica, que explica principalmente sintomas cognitivos."
+    }
+  },
+  {
+    "caso": "Um paciente com primeiro episódio psicótico inicia Haloperidol. No dia seguinte, desenvolve contração muscular dolorosa do pescoço, com desvio da cabeça e trismo.",
+    "pergunta": "Qual efeito adverso está sendo apresentado?",
+    "alts": [
+      "Hiperprolactinemia por bloqueio D2 da via tuberoinfundibular.",
+      "Síndrome serotoninérgica por aumento de 5-HT.",
+      "Distonia aguda por bloqueio D2 na via nigroestriatal.",
+      "Discinesia tardia, que tipicamente se manifesta após exposição prolongada e desaparece durante o sono."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material cita distonia e parkinsonismo como efeitos extrapiramidais relacionados ao bloqueio D2 na via nigroestriatal. A associação com Haloperidol e aparecimento precoce do espasmo cervical favorece distonia aguda.",
+    "erros": {
+      "0": "Hiperprolactinemia por bloqueio D2 da via tuberoinfundibular.",
+      "1": "Síndrome serotoninérgica por aumento de 5-HT.",
+      "3": "Discinesia tardia, que tipicamente se manifesta após exposição prolongada e desaparece durante o sono."
+    }
+  },
+  {
+    "caso": "Uma mulher de 30 anos com esquizofrenia e IMC de 33 kg/m² precisa iniciar um antipsicótico. O médico discute o risco de ganho de peso e alterações metabólicas antes da escolha.",
+    "pergunta": "Qual afirmação está alinhada ao material?",
+    "alts": [
+      "Olanzapina tem baixo risco metabólico e, por isso, o peso não precisa ser acompanhado.",
+      "Clozapina é sempre metabolicamente neutra e, portanto, dispensa glicemia e perfil lipídico.",
+      "Os antipsicóticos atípicos não interferem no metabolismo; os principais problemas são apenas neurológicos.",
+      "Olanzapina apresenta alto risco metabólico, com ganho de peso, dislipidemia e hiperglicemia, justificando monitorização metabólica basal e periódica."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> os antipsicóticos atípicos apresentados no material, especialmente Olanzapina e Clozapina, podem causar ganho de peso, dislipidemia e hiperglicemia. Por isso, peso, IMC, circunferência abdominal, glicemia e lipídios devem ser monitorados.",
+    "erros": {
+      "0": "Olanzapina tem baixo risco metabólico e, por isso, o peso não precisa ser acompanhado.",
+      "1": "Clozapina é sempre metabolicamente neutra e, portanto, dispensa glicemia e perfil lipídico.",
+      "2": "Os antipsicóticos atípicos não interferem no metabolismo; os principais problemas são apenas neurológicos."
+    }
+  },
+  {
+    "caso": "Uma mulher em uso de Risperidona apresenta amenorreia e galactorreia persistentes. A prolactina sérica está elevada.",
+    "pergunta": "Qual mecanismo explica melhor esse achado?",
+    "alts": [
+      "Estimulação dos receptores 5-HT2A no estriado, que diminui a prolactina.",
+      "Ativação da via nigroestriatal, que aumenta a secreção hipofisária de prolactina.",
+      "Bloqueio D2 na via mesolímbica, reduzindo diretamente a prolactina.",
+      "Bloqueio D2 na via tuberoinfundibular, removendo a inibição dopaminérgica da secreção de prolactina."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> a dopamina exerce inibição tônica da prolactina na via tuberoinfundibular. O bloqueio D2 remove esse freio e pode causar hiperprolactinemia, manifestada por galactorreia e amenorreia.",
+    "erros": {
+      "0": "Estimulação dos receptores 5-HT2A no estriado, que diminui a prolactina.",
+      "1": "Ativação da via nigroestriatal, que aumenta a secreção hipofisária de prolactina.",
+      "2": "Bloqueio D2 na via mesolímbica, reduzindo diretamente a prolactina."
+    }
+  },
+  {
+    "caso": "Um paciente com esquizofrenia permanece sintomático após dois ensaios terapêuticos adequados com antipsicóticos diferentes. A equipe considera uma opção específica para refratariedade.",
+    "pergunta": "Qual alternativa corresponde ao conteúdo apresentado?",
+    "alts": [
+      "A Clozapina é indicada somente quando há hiperprolactinemia por Risperidona.",
+      "A Clozapina deve ser usada apenas em primeiro episódio psicótico, antes de qualquer tentativa com outros antipsicóticos.",
+      "A esquizofrenia resistente é definida após falha de um único ensaio curto, independentemente de dose ou duração.",
+      "A Clozapina é o antipsicótico com eficácia superior comprovada na esquizofrenia resistente ao tratamento após falha de dois ensaios adequados."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material define esquizofrenia resistente ao tratamento após falha de dois ensaios adequados e destaca a Clozapina como opção com eficácia superior comprovada nesse cenário. O mesmo material também ressalta sua necessidade de monitorização rigorosa por efeitos adversos graves.",
+    "erros": {
+      "0": "A Clozapina é indicada somente quando há hiperprolactinemia por Risperidona.",
+      "1": "A Clozapina deve ser usada apenas em primeiro episódio psicótico, antes de qualquer tentativa com outros antipsicóticos.",
+      "2": "A esquizofrenia resistente é definida após falha de um único ensaio curto, independentemente de dose ou duração."
+    }
+  },
+  {
+    "caso": "Um paciente com esquizofrenia estável em Clozapina fuma diariamente. Ele decide interromper o tabagismo de forma abrupta e, poucos dias depois, apresenta sinais compatíveis com excesso do medicamento.",
+    "pergunta": "Qual mecanismo explica o aumento do risco de toxicidade?",
+    "alts": [
+      "O tabagismo bloqueia CYP1A2 e, ao ser interrompido, reduz a exposição à Clozapina.",
+      "A fumaça do tabaco induz o CYP1A2; ao parar de fumar, essa indução diminui e a concentração sérica da Clozapina pode aumentar.",
+      "A suspensão do tabaco aumenta a depuração da Clozapina por indução de CYP1A2.",
+      "A fumaça do tabaco reduz a ligação da Clozapina à albumina e, por isso, a interrupção sempre diminui sua fração livre."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> a fumaça do tabaco induz CYP1A2. Enquanto o paciente fuma, a atividade enzimática aumenta. Ao interromper abruptamente, a indução regride e a exposição à Clozapina pode subir, aumentando o risco de toxicidade.",
+    "erros": {
+      "0": "O tabagismo bloqueia CYP1A2 e, ao ser interrompido, reduz a exposição à Clozapina.",
+      "2": "A suspensão do tabaco aumenta a depuração da Clozapina por indução de CYP1A2.",
+      "3": "A fumaça do tabaco reduz a ligação da Clozapina à albumina e, por isso, a interrupção sempre diminui sua fração livre."
+    }
+  },
+  {
+    "caso": "Um paciente com depressão recebe Venlafaxina em dose elevada. Em consulta, apresenta cefaleia e pressão arterial de 160/100 mmHg, sem histórico prévio de hipertensão.",
+    "pergunta": "Qual explicação e conduta de monitorização estão mais de acordo com o material?",
+    "alts": [
+      "A Venlafaxina amplia a inibição de recaptação de noradrenalina em doses maiores; a pressão arterial deve ser monitorada, especialmente em doses elevadas.",
+      "A Venlafaxina age apenas como ISRS em qualquer dose, portanto a elevação da pressão não tem relação com o fármaco.",
+      "A Venlafaxina é um antipsicótico D2 e a hipertensão indica efeito extrapiramidal.",
+      "A Venlafaxina reduz recaptação de dopamina exclusivamente e, por isso, causa hipotensão."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material descreve a Venlafaxina como IRSN dose-dependente: em doses baixas atua predominantemente como ISRS, enquanto em doses maiores acrescenta maior ação noradrenérgica. Por isso, deve-se monitorar pressão arterial em doses elevadas.",
+    "erros": {
+      "1": "A Venlafaxina age apenas como ISRS em qualquer dose, portanto a elevação da pressão não tem relação com o fármaco.",
+      "2": "A Venlafaxina é um antipsicótico D2 e a hipertensão indica efeito extrapiramidal.",
+      "3": "A Venlafaxina reduz recaptação de dopamina exclusivamente e, por isso, causa hipotensão."
+    }
+  },
+  {
+    "caso": "Uma paciente com neuropatia diabética dolorosa e sintomas depressivos necessita de tratamento farmacológico. Há também história de doença hepática conhecida.",
+    "pergunta": "Qual escolha e ressalva são compatíveis com o material?",
+    "alts": [
+      "A Duloxetina é indicada justamente para hepatopatas porque protege o fígado de lesão medicamentosa.",
+      "A Duloxetina é exclusivamente um benzodiazepínico e não possui papel em dor neuropática.",
+      "A Duloxetina tem ação dual e efeito analgésico, sendo opção para dor crônica e neuropatia diabética, mas deve ser evitada em hepatopatas pelo risco de hepatotoxicidade.",
+      "A principal preocupação com Duloxetina é apenas agranulocitose, sem relação com função hepática."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material associa a Duloxetina a bloqueio dual de 5-HT e NE e destaca efeito analgésico, com indicação em dor crônica, fibromialgia e neuropatia diabética. A mesma aula alerta para hepatotoxicidade e recomenda evitá-la em hepatopatas.",
+    "erros": {
+      "0": "A Duloxetina é indicada justamente para hepatopatas porque protege o fígado de lesão medicamentosa.",
+      "1": "A Duloxetina é exclusivamente um benzodiazepínico e não possui papel em dor neuropática.",
+      "3": "A principal preocupação com Duloxetina é apenas agranulocitose, sem relação com função hepática."
+    }
+  },
+  {
+    "caso": "Um paciente com transtorno depressivo maior e epilepsia procura uma opção com menor chance de disfunção sexual. O médico considera acrescentar Bupropiona.",
+    "pergunta": "Qual ponto de segurança deve impedir essa escolha?",
+    "alts": [
+      "A Bupropiona é um ISRS e sua principal contraindicação é glaucoma.",
+      "A Bupropiona reduz o limiar convulsivo e é contraindicada em pacientes com epilepsia.",
+      "A Bupropiona reduz a atividade dopaminérgica e por isso é usada para prevenir crises convulsivas.",
+      "A Bupropiona aumenta o limiar convulsivo e, portanto, seria especialmente indicada na epilepsia."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material identifica a Bupropiona como NDRI, inibindo a recaptação de dopamina e noradrenalina. O ponto de segurança destacado é a redução do limiar convulsivo, o que contraindica seu uso em epilepsia e distúrbios alimentares.",
+    "erros": {
+      "0": "A Bupropiona é um ISRS e sua principal contraindicação é glaucoma.",
+      "2": "A Bupropiona reduz a atividade dopaminérgica e por isso é usada para prevenir crises convulsivas.",
+      "3": "A Bupropiona aumenta o limiar convulsivo e, portanto, seria especialmente indicada na epilepsia."
+    }
+  },
+  {
+    "caso": "Uma pessoa em tratamento com Tranilcipromina é orientada sobre alimentação e relata que costuma consumir alimentos ricos em tiramina.",
+    "pergunta": "Qual orientação decorre diretamente do risco descrito no material?",
+    "alts": [
+      "O principal objetivo da restrição de tiramina é prevenir hipoglicemia grave, sem relação com pressão arterial.",
+      "Os IMAO reduzem NE e DA; por isso a tiramina deve ser evitada apenas para prevenir sedação.",
+      "A dieta deve evitar excesso de tiramina, porque os IMAO elevam 5-HT, NE e DA e aumentam o risco de crise hipertensiva.",
+      "A dieta não interfere em IMAO, pois sua ação é exclusivamente renal e independe de interações alimentares."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material destaca que IMAO aumentam 5-HT, NE e DA e apresentam alto risco de interação. A tiramina pode precipitar crise hipertensiva, justificando a orientação de dieta apropriada.",
+    "erros": {
+      "0": "O principal objetivo da restrição de tiramina é prevenir hipoglicemia grave, sem relação com pressão arterial.",
+      "1": "Os IMAO reduzem NE e DA; por isso a tiramina deve ser evitada apenas para prevenir sedação.",
+      "3": "A dieta não interfere em IMAO, pois sua ação é exclusivamente renal e independe de interações alimentares."
+    }
+  },
+  {
+    "caso": "Uma mulher em uso de Sertralina recebe Tramadol para dor. Dois dias depois, apresenta agitação, sudorese profusa, taquicardia, tremores e clônus espontâneo em membros inferiores.",
+    "pergunta": "Qual achado, segundo o material, é particularmente útil para reconhecer o diagnóstico?",
+    "alts": [
+      "Clônus na presença de agente serotoninérgico, associado a hiperreflexia e disautonomia, favorece síndrome serotoninérgica.",
+      "Rigidez em cano de chumbo com bradirreflexia, sem relação com serotonina.",
+      "Galactorreia e amenorreia por bloqueio D2 tuberoinfundibular.",
+      "Edema periférico isolado por bloqueio de canais de cálcio."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material descreve a síndrome serotoninérgica como diagnóstico eminentemente clínico, com agitação, disautonomia, hipertermia, tremores, hiperreflexia e, de forma especialmente característica, clônus. A combinação ISRS + Tramadol é apresentada como associação perigosa.",
+    "erros": {
+      "1": "Rigidez em cano de chumbo com bradirreflexia, sem relação com serotonina.",
+      "2": "Galactorreia e amenorreia por bloqueio D2 tuberoinfundibular.",
+      "3": "Edema periférico isolado por bloqueio de canais de cálcio."
+    }
+  },
+  {
+    "caso": "Uma paciente com transtorno bipolar apresenta episódio de mania aguda enquanto utilizava um antidepressivo. A equipe discute se deve manter o antidepressivo porque a paciente também tem histórico de depressão.",
+    "pergunta": "Qual conduta está alinhada ao material?",
+    "alts": [
+      "Usar antidepressivo em monoterapia como estratégia preferencial durante a mania.",
+      "Suspender imediatamente o antidepressivo e tratar a mania com estabilizador do humor e/ou antipsicótico apropriado ao quadro agudo.",
+      "Manter o antidepressivo isoladamente para estabilizar o humor mais rapidamente.",
+      "Aumentar a dose do antidepressivo para impedir a progressão da mania."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material é explícito: antidepressivos em monoterapia são contraindicados no transtorno bipolar por risco de virada e ciclagem, e, durante mania aguda, qualquer antidepressivo em curso deve ser suspenso. Mania grave pode exigir associação de estabilizador e antipsicótico atípico.",
+    "erros": {
+      "0": "Usar antidepressivo em monoterapia como estratégia preferencial durante a mania.",
+      "2": "Manter o antidepressivo isoladamente para estabilizar o humor mais rapidamente.",
+      "3": "Aumentar a dose do antidepressivo para impedir a progressão da mania."
+    }
+  },
+  {
+    "caso": "Um homem com transtorno bipolar em uso de Lítio apresenta tremores grosseiros, ataxia e confusão. A litemia é de 1,8 mEq/L. Ele iniciou recentemente um AINE por conta própria.",
+    "pergunta": "Qual explicação é mais consistente com o material?",
+    "alts": [
+      "O Lítio é eliminado principalmente pelo fígado, portanto a função renal e os AINEs não têm relevância.",
+      "A litemia de 1,8 mEq/L está abaixo da faixa de toxicidade e o AINE protege contra intoxicação.",
+      "O quadro sugere intoxicação por Lítio; AINEs podem reduzir sua excreção renal e elevar a litemia, exigindo monitorização e revisão da interação.",
+      "A litemia elevada demonstra apenas maior eficácia terapêutica e não exige intervenção enquanto não houver convulsão."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material informa faixa-alvo de 0,6–1,2 mEq/L e risco de intoxicação acima de 1,5 mEq/L, com tremores grosseiros, ataxia, confusão e convulsões. Também destaca que AINEs, diuréticos tiazídicos e IECA/BRA podem reduzir a excreção renal do Lítio.",
+    "erros": {
+      "0": "O Lítio é eliminado principalmente pelo fígado, portanto a função renal e os AINEs não têm relevância.",
+      "1": "A litemia de 1,8 mEq/L está abaixo da faixa de toxicidade e o AINE protege contra intoxicação.",
+      "3": "A litemia elevada demonstra apenas maior eficácia terapêutica e não exige intervenção enquanto não houver convulsão."
+    }
+  },
+  {
+    "caso": "Um paciente apresenta pressão arterial persistentemente elevada. A equipe revisa a relação entre débito cardíaco e resistência vascular sistêmica antes de escolher uma combinação terapêutica.",
+    "pergunta": "Qual equação representa a relação destacada no material?",
+    "alts": [
+      "PA = DC × RVS, de modo que alterações do débito cardíaco ou da resistência vascular sistêmica podem modificar a pressão arterial.",
+      "PA = FC ÷ VS, independentemente da resistência vascular sistêmica.",
+      "PA = albumina × volume de distribuição, pois a pressão depende principalmente da ligação proteica.",
+      "PA = RVS ÷ DC, portanto reduzir o débito cardíaco sempre eleva a pressão arterial."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material apresenta a pressão arterial como PA = DC × RVS, com DC determinado por FC × VS. O modelo ajuda a entender como fármacos alteram hemodinâmica por efeitos cardíacos, vasculares e sobre o volume.",
+    "erros": {
+      "1": "PA = FC ÷ VS, independentemente da resistência vascular sistêmica.",
+      "2": "PA = albumina × volume de distribuição, pois a pressão depende principalmente da ligação proteica.",
+      "3": "PA = RVS ÷ DC, portanto reduzir o débito cardíaco sempre eleva a pressão arterial."
+    }
+  },
+  {
+    "caso": "Um homem hipertenso em uso de Enalapril apresenta tosse seca persistente, sem sinais de infecção ou congestão. O sintoma começou após o início do fármaco e não melhorou com medidas sintomáticas.",
+    "pergunta": "Qual conduta farmacológica é mais compatível com o mecanismo apresentado?",
+    "alts": [
+      "A tosse caracteriza broncoespasmo obrigatório e exige suspensão definitiva de toda terapia do SRAA.",
+      "A tosse é causada por aumento da secreção de aldosterona e, por isso, deve-se adicionar um diurético tiazídico sem rever o IECA.",
+      "A tosse decorre do acúmulo de bradicinina associado ao IECA; uma alternativa é substituir por um BRA, que não causa esse efeito típico.",
+      "A tosse ocorre porque o Enalapril bloqueia diretamente receptores beta-2 pulmonares; deve-se trocar por outro IECA."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material relaciona a tosse seca dos IECAs ao acúmulo de bradicinina. Em pacientes que não toleram esse efeito, os BRA são descritos como alternativa porque bloqueiam AT1 sem causar a tosse típica dos IECAs.",
+    "erros": {
+      "0": "A tosse caracteriza broncoespasmo obrigatório e exige suspensão definitiva de toda terapia do SRAA.",
+      "1": "A tosse é causada por aumento da secreção de aldosterona e, por isso, deve-se adicionar um diurético tiazídico sem rever o IECA.",
+      "3": "A tosse ocorre porque o Enalapril bloqueia diretamente receptores beta-2 pulmonares; deve-se trocar por outro IECA."
+    }
+  },
+  {
+    "caso": "Uma mulher com IC-FEr é candidata à terapia com Sacubitril/Valsartan. O residente precisa explicar por que o medicamento reúne dois mecanismos distintos.",
+    "pergunta": "Qual explicação está correta?",
+    "alts": [
+      "Ambos os componentes são inibidores da ECA e produzem o mesmo bloqueio molecular.",
+      "O Sacubitril bloqueia AT1 e o Valsartan inibe a neprilisina, com redução da natriurese.",
+      "O Sacubitril inibe a neprilisina, elevando peptídeos natriuréticos, enquanto o Valsartan bloqueia AT1 e reduz os efeitos deletérios da angiotensina II.",
+      "O Valsartan ativa AT1 para aumentar vasoconstrição compensatória, enquanto o Sacubitril reduz BNP."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o ARNI combina inibição da neprilisina com bloqueio de AT1. O aumento de ANP/BNP favorece vasodilatação e natriurese, enquanto o bloqueio de AT1 reduz vasoconstrição e retenção hídrica.",
+    "erros": {
+      "0": "Ambos os componentes são inibidores da ECA e produzem o mesmo bloqueio molecular.",
+      "1": "O Sacubitril bloqueia AT1 e o Valsartan inibe a neprilisina, com redução da natriurese.",
+      "3": "O Valsartan ativa AT1 para aumentar vasoconstrição compensatória, enquanto o Sacubitril reduz BNP."
+    }
+  },
+  {
+    "caso": "Um paciente com IC-FEr está estável após confirmação ecocardiográfica de fração de ejeção reduzida. A equipe pretende organizar o tratamento farmacológico de base.",
+    "pergunta": "Qual conjunto corresponde aos quatro pilares fundacionais destacados no material?",
+    "alts": [
+      "IECA isolado, tiazídico, estatina e antiagregante, sem necessidade de outras classes.",
+      "Diurético de alça, nitrato, fibrato e antiagregante plaquetário.",
+      "ARNI (ou IECA/BRA), betabloqueador, antagonista mineralocorticoide e iSGLT2.",
+      "Betabloqueador, bloqueador de canal de cálcio, fibrato e digoxina."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material apresenta a terapia quádrupla fundacional da IC-FEr: bloqueio do SRAA preferencialmente com ARNI, betabloqueador, antagonista mineralocorticoide como Espironolactona e iSGLT2. A recomendação apresentada é iniciar precocemente, em simultâneo ou em rápida sucessão, seguida de titulação.",
+    "erros": {
+      "0": "IECA isolado, tiazídico, estatina e antiagregante, sem necessidade de outras classes.",
+      "1": "Diurético de alça, nitrato, fibrato e antiagregante plaquetário.",
+      "3": "Betabloqueador, bloqueador de canal de cálcio, fibrato e digoxina."
+    }
+  },
+  {
+    "caso": "Um homem com IC-FEr usa Espironolactona. Após aumento da dose, seu potássio sérico sobe e a função renal precisa ser revista.",
+    "pergunta": "Qual parâmetro deve ser acompanhado prioritariamente para segurança?",
+    "alts": [
+      "Apenas hemoglobina, porque o principal risco é anemia hemolítica.",
+      "Somente colesterol LDL, porque o mecanismo depende de síntese hepática de colesterol.",
+      "Apenas TSH, pois a Espironolactona causa obrigatoriamente hipotireoidismo.",
+      "Potássio sérico e creatinina, especialmente após início ou ajuste, porque IECA/BRA/ARM podem causar hipercalemia e disfunção renal aguda."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material destaca hipercalemia, disfunção renal aguda e hipotensão como riscos de IECA/BRA/ARM. Potássio e creatinina devem ser obtidos no basal e reavaliados, especialmente 1–2 semanas após início ou ajuste.",
+    "erros": {
+      "0": "Apenas hemoglobina, porque o principal risco é anemia hemolítica.",
+      "1": "Somente colesterol LDL, porque o mecanismo depende de síntese hepática de colesterol.",
+      "2": "Apenas TSH, pois a Espironolactona causa obrigatoriamente hipotireoidismo."
+    }
+  },
+  {
+    "caso": "Um paciente sofre IAMCSST e é submetido a intervenção coronariana percutânea com implante de stent farmacológico. No pós-procedimento, a equipe planeja prevenir novos eventos aterotrombóticos.",
+    "pergunta": "Qual esquema antiplaquetário corresponde ao material?",
+    "alts": [
+      "AAS isoladamente, porque a inibição de P2Y12 não acrescenta benefício no período agudo.",
+      "Dipiridamol isolado como estratégia padrão para todo IAM com stent.",
+      "Varfarina isoladamente, pois anticoagulação substitui a terapia antiplaquetária após stent.",
+      "AAS em dose de ataque associado a um inibidor de P2Y12, como Ticagrelor ou Prasugrel, constituindo terapia antiplaquetária dupla."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> na fase aguda da SCA, o material apresenta DAPT com AAS + inibidor P2Y12 (Ticagrelor ou Prasugrel preferenciais ao Clopidogrel), além de anticoagulação na fase apropriada.",
+    "erros": {
+      "0": "AAS isoladamente, porque a inibição de P2Y12 não acrescenta benefício no período agudo.",
+      "1": "Dipiridamol isolado como estratégia padrão para todo IAM com stent.",
+      "2": "Varfarina isoladamente, pois anticoagulação substitui a terapia antiplaquetária após stent."
+    }
+  },
+  {
+    "caso": "Uma mulher com fibrilação atrial persistente e frequência ventricular elevada precisa de estratégia para reduzir a resposta ventricular. Ela também apresenta IC-FEr.",
+    "pergunta": "Qual opção está de acordo com o material?",
+    "alts": [
+      "Diltiazem deve ser a primeira escolha em qualquer paciente com IC-FEr porque não interfere na condução AV.",
+      "Betabloqueador é primeira linha para controle da frequência; Verapamil e Diltiazem devem ser evitados na IC-FEr.",
+      "Propafenona é a opção universal para controle de frequência, independentemente de doença estrutural.",
+      "Verapamil é preferencial na IC-FEr porque aumenta a contratilidade ventricular."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material organiza o manejo da FA em controle de frequência, controle de ritmo e prevenção tromboembólica. Para frequência, betabloqueadores são primeira linha; Diltiazem e Verapamil são alternativas em alguns cenários, mas devem ser evitados na IC-FEr.",
+    "erros": {
+      "0": "Diltiazem deve ser a primeira escolha em qualquer paciente com IC-FEr porque não interfere na condução AV.",
+      "2": "Propafenona é a opção universal para controle de frequência, independentemente de doença estrutural.",
+      "3": "Verapamil é preferencial na IC-FEr porque aumenta a contratilidade ventricular."
+    }
+  },
+  {
+    "caso": "Um homem com angina pergunta se pode usar um inibidor da PDE5 para disfunção erétil enquanto utiliza nitrato para alívio da dor anginosa.",
+    "pergunta": "Qual orientação é compatível com o material?",
+    "alts": [
+      "A associação é contraindicada porque pode produzir vasodilatação extrema e hipotensão refratária.",
+      "A associação é recomendada porque os dois fármacos promovem vasodilatação complementar sem risco hemodinâmico.",
+      "A associação só é perigosa por diminuir a absorção intestinal dos nitratos.",
+      "O risco ocorre apenas com IECA, não com nitratos e inibidores de PDE5."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material é direto: nitratos combinados com Sildenafil, Tadalafil ou Vardenafil podem causar vasodilatação extrema e hipotensão refratária. Por isso, a associação é contraindicada.",
+    "erros": {
+      "1": "A associação é recomendada porque os dois fármacos promovem vasodilatação complementar sem risco hemodinâmico.",
+      "2": "A associação só é perigosa por diminuir a absorção intestinal dos nitratos.",
+      "3": "O risco ocorre apenas com IECA, não com nitratos e inibidores de PDE5."
+    }
+  },
+  {
+    "caso": "Um paciente em uso crônico de Amiodarona retorna assintomático para acompanhamento. A equipe revisa quais exames devem integrar a vigilância de toxicidade.",
+    "pergunta": "Qual conjunto de monitorização é o mais adequado segundo o material?",
+    "alts": [
+      "Somente CPK, porque a toxicidade típica é exclusivamente muscular.",
+      "Somente glicemia capilar diária, sem necessidade de exames cardíacos ou tireoidianos.",
+      "TSH/T4 livre e AST/ALT periodicamente, além de ECG e radiografia de tórax anual.",
+      "Apenas hemograma e ferritina, porque o principal risco é anemia."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material destaca disfunção tireoidiana, fibrose pulmonar, hepatotoxicidade e prolongamento do QT como riscos da Amiodarona. A tabela de segurança propõe TSH/T4L e AST/ALT semestralmente, além de ECG e radiografia de tórax anuais.",
+    "erros": {
+      "0": "Somente CPK, porque a toxicidade típica é exclusivamente muscular.",
+      "1": "Somente glicemia capilar diária, sem necessidade de exames cardíacos ou tireoidianos.",
+      "3": "Apenas hemograma e ferritina, porque o principal risco é anemia."
+    }
+  },
+  {
+    "caso": "Um adulto com DM1 apresenta quadro de gastroenterite e reduz a ingestão de alimentos. Um familiar pergunta se a insulina basal pode ser suspensa enquanto ele não estiver comendo.",
+    "pergunta": "Qual orientação é mais compatível com o material?",
+    "alts": [
+      "A insulina basal deve ser suspensa sempre que não houver refeições, porque sua função é apenas cobrir carboidratos.",
+      "A suspensão da basal é a estratégia padrão para evitar qualquer risco de cetose durante doença aguda.",
+      "A insulina basal continua necessária, pois suprime produção hepática e lipólise e ajuda a prevenir cetose e cetoacidose mesmo durante jejum.",
+      "A insulina basal só é necessária quando a glicemia capilar estiver acima de 250 mg/dL."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> no DM1, a insulinopenia é fundamental e a insulina basal é reposição vital. O material destaca que ela suprime produção hepática e lipólise mesmo quando o paciente não está comendo, prevenindo catabolismo e cetoacidose.",
+    "erros": {
+      "0": "A insulina basal deve ser suspensa sempre que não houver refeições, porque sua função é apenas cobrir carboidratos.",
+      "1": "A suspensão da basal é a estratégia padrão para evitar qualquer risco de cetose durante doença aguda.",
+      "3": "A insulina basal só é necessária quando a glicemia capilar estiver acima de 250 mg/dL."
+    }
+  },
+  {
+    "caso": "Uma paciente com DM1 precisa escolher a insulina prandial para uso imediatamente antes da refeição. O objetivo é utilizar um análogo cujo início de ação seja rápido.",
+    "pergunta": "Qual perfil corresponde ao material?",
+    "alts": [
+      "Glargina U-100: início em 10 minutos, pico em 1–2 horas e duração de 3–5 horas.",
+      "Insulina ultrarrápida: início em cerca de 10–15 minutos, pico em 1–2 horas e duração aproximada de 3–5 horas.",
+      "Insulina regular: início em 1–2 horas, pico em 6–8 horas e duração menor que 2 horas.",
+      "NPH: início em 10 minutos, sem pico e duração superior a 40 horas."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> a tabela da aula diferencia os perfis de ação. Lispro, asparte e glulisina são ultrarrápidas, com início de 10–15 minutos, pico de 1–2 horas e duração aproximada de 3–5 horas, perfil compatível com cobertura prandial.",
+    "erros": {
+      "0": "Glargina U-100: início em 10 minutos, pico em 1–2 horas e duração de 3–5 horas.",
+      "2": "Insulina regular: início em 1–2 horas, pico em 6–8 horas e duração menor que 2 horas.",
+      "3": "NPH: início em 10 minutos, sem pico e duração superior a 40 horas."
+    }
+  },
+  {
+    "caso": "Uma pessoa com diabetes está consciente, consegue deglutir e apresenta glicemia capilar de 58 mg/dL. Não há alteração de consciência nem sinais de comprometimento da via aérea.",
+    "pergunta": "Qual é a conduta inicial descrita no material?",
+    "alts": [
+      "Aplicar imediatamente glucagon e impedir qualquer ingestão oral, apesar de a pessoa estar consciente e apta a deglutir.",
+      "Oferecer cerca de 15 g de carboidrato de ação rápida, reavaliar em 15 minutos e repetir se necessário.",
+      "Administrar uma dose adicional de insulina para corrigir a glicemia elevada.",
+      "Aguardar uma hora para repetir a glicemia, porque valores entre 54 e 69 mg/dL não exigem intervenção."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> 58 mg/dL corresponde a hipoglicemia nível 1 no material. Em pessoa consciente e capaz de deglutir, a orientação é cerca de 15 g de carboidrato de ação rápida, com reavaliação em 15 minutos. Casos graves exigem glucagon e suporte, sem via oral quando a via aérea não é protegida.",
+    "erros": {
+      "0": "Aplicar imediatamente glucagon e impedir qualquer ingestão oral, apesar de a pessoa estar consciente e apta a deglutir.",
+      "2": "Administrar uma dose adicional de insulina para corrigir a glicemia elevada.",
+      "3": "Aguardar uma hora para repetir a glicemia, porque valores entre 54 e 69 mg/dL não exigem intervenção."
+    }
+  },
+  {
+    "caso": "Uma jovem com DM1 utiliza monitorização contínua de glicose. O relatório mostra TIR de 68%, TBR de 6% e episódios noturnos recorrentes de glicemia baixa após treinos intensos no fim da tarde.",
+    "pergunta": "Qual interpretação prioriza o risco destacado no material?",
+    "alts": [
+      "O TBR está acima da meta apresentada (<4%), indicando maior exposição à hipoglicemia e necessidade de investigar exercício, basal e correções tardias.",
+      "TIR é a única métrica importante e substitui a investigação de horários, exercício e insulina ativa.",
+      "Hipoglicemia noturna após exercício exige automaticamente grande redução permanente da basal, independentemente do padrão temporal.",
+      "O TBR de 6% está abaixo da meta e, portanto, não representa risco relevante."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material apresenta TIR >70% como referência para muitos adultos e TBR <4%, com prioridade para redução de hipoglicemia. Também orienta que o padrão temporal deve ser investigado antes de grandes mudanças na basal, considerando exercício tardio e correções empilhadas.",
+    "erros": {
+      "1": "TIR é a única métrica importante e substitui a investigação de horários, exercício e insulina ativa.",
+      "2": "Hipoglicemia noturna após exercício exige automaticamente grande redução permanente da basal, independentemente do padrão temporal.",
+      "3": "O TBR de 6% está abaixo da meta e, portanto, não representa risco relevante."
+    }
+  },
+  {
+    "caso": "Um homem com DM2 usa Metformina e apresenta TFGe de 28 mL/min/1,73 m². Ele está clinicamente estável, mas precisa de revisão da terapia.",
+    "pergunta": "Qual decisão está de acordo com o material?",
+    "alts": [
+      "A Metformina protege obrigatoriamente o coração e o rim, independentemente do fenótipo e da TFGe.",
+      "A Metformina é contraindicada nessa função renal, pois o material estabelece contraindicação quando a TFG é <30 mL/min/1,73 m².",
+      "A função renal não interfere na Metformina, portanto a dose deve permanecer inalterada em qualquer TFGe.",
+      "A Metformina deve ser aumentada porque a função renal reduzida diminui sua ação glicêmica."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material estabelece contraindicação da Metformina quando TFG <30 mL/min/1,73 m². Em faixas intermediárias, recomenda revisão de dose, função renal e situações como hipóxia, desidratação e doença aguda.",
+    "erros": {
+      "0": "A Metformina protege obrigatoriamente o coração e o rim, independentemente do fenótipo e da TFGe.",
+      "2": "A função renal não interfere na Metformina, portanto a dose deve permanecer inalterada em qualquer TFGe.",
+      "3": "A Metformina deve ser aumentada porque a função renal reduzida diminui sua ação glicêmica."
+    }
+  },
+  {
+    "caso": "Uma mulher com DM2, insuficiência cardíaca e DRC apresenta HbA1c próxima da meta, mas permanece em risco de progressão renal e hospitalização por IC.",
+    "pergunta": "Qual classe é priorizada pelo material mesmo quando a HbA1c não é a principal preocupação?",
+    "alts": [
+      "Sulfonilureia, porque sua principal vantagem é proteção renal independente da hipoglicemia.",
+      "Pioglitazona, porque a retenção de líquido reduz hospitalizações por IC.",
+      "DPP-4, porque possui maior benefício cardiorrenal que iSGLT2 nesse cenário.",
+      "iSGLT2, porque o benefício cardiorrenal é parte central da indicação e pode persistir mesmo quando o efeito sobre HbA1c diminui com a queda da TFGe."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material enfatiza que, em DM2 com IC ou DRC, a prioridade pode ser proteção do órgão, mesmo com HbA1c próxima da meta. iSGLT2 reduzem progressão da DRC e hospitalização por IC, além de promover glicosúria e natriurese.",
+    "erros": {
+      "0": "Sulfonilureia, porque sua principal vantagem é proteção renal independente da hipoglicemia.",
+      "1": "Pioglitazona, porque a retenção de líquido reduz hospitalizações por IC.",
+      "2": "DPP-4, porque possui maior benefício cardiorrenal que iSGLT2 nesse cenário."
+    }
+  },
+  {
+    "caso": "Uma paciente com DM2, IMC 36 kg/m² e doença aterosclerótica deseja intensificar o tratamento, sobretudo visando perda ponderal e proteção cardiovascular.",
+    "pergunta": "Qual característica dos agonistas de GLP-1 sustenta essa escolha?",
+    "alts": [
+      "Produzem hipoglicemia intensa em monoterapia porque estimulam insulina independentemente da glicemia.",
+      "Seu principal mecanismo é bloquear a absorção intestinal de colesterol por NPC1L1.",
+      "Aumentam insulina e reduzem glucagon de forma dependente da glicose, reduzem o esvaziamento gástrico e aumentam saciedade, favorecendo perda de peso e benefício cardiovascular conforme a molécula e a população.",
+      "Provocam ganho de peso por estimular continuamente glucagon, sendo usados principalmente quando a obesidade não é desejada."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> o material descreve GLP-1 RA como classe de alta eficácia glicêmica e perda ponderal importante. O efeito inclui aumento de insulina, redução de glucagon e menor esvaziamento gástrico, com ação dependente da glicose e benefício cardiovascular para moléculas/populações específicas.",
+    "erros": {
+      "0": "Produzem hipoglicemia intensa em monoterapia porque estimulam insulina independentemente da glicemia.",
+      "1": "Seu principal mecanismo é bloquear a absorção intestinal de colesterol por NPC1L1.",
+      "3": "Provocam ganho de peso por estimular continuamente glucagon, sendo usados principalmente quando a obesidade não é desejada."
+    }
+  },
+  {
+    "caso": "Uma idosa com DM2 e DRC utiliza uma sulfonilureia. Nas últimas semanas, apresenta episódios recorrentes de sudorese, tremor e confusão que melhoram após ingerir açúcar.",
+    "pergunta": "Qual fator torna o medicamento particularmente preocupante nesse contexto?",
+    "alts": [
+      "Sulfonilureias têm risco alto de hipoglicemia, especialmente em idosos e quando a função renal está reduzida.",
+      "O principal efeito das sulfonilureias é causar hiperglicemia por resistência à insulina.",
+      "Sulfonilureias apresentam risco muito baixo de hipoglicemia e são preferíveis em idosos com DRC.",
+      "A DRC protege contra hipoglicemia porque reduz a exposição aos secretagogos."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> na comparação de classes, o material atribui risco alto de hipoglicemia às sulfonilureias e chama atenção para idosos e DRC. O quadro autonômico e neuroglicopênico descrito é coerente com esse efeito.",
+    "erros": {
+      "1": "O principal efeito das sulfonilureias é causar hiperglicemia por resistência à insulina.",
+      "2": "Sulfonilureias apresentam risco muito baixo de hipoglicemia e são preferíveis em idosos com DRC.",
+      "3": "A DRC protege contra hipoglicemia porque reduz a exposição aos secretagogos."
+    }
+  },
+  {
+    "caso": "Um homem com DM2 e insuficiência cardíaca apresenta edema crescente após introdução de Pioglitazona.",
+    "pergunta": "Qual relação entre mecanismo e evento adverso é destacada no material?",
+    "alts": [
+      "Pioglitazona é sensibilizadora de insulina, mas pode causar retenção hídrica e piorar a insuficiência cardíaca; por isso deve ser evitada nesse cenário.",
+      "O edema não guarda relação com Pioglitazona; o fármaco tem efeito exclusivamente neurológico.",
+      "Pioglitazona promove intensa natriurese e seu efeito esperado é reduzir volume intravascular.",
+      "Pioglitazona é diurético de alça e, portanto, tende a reduzir edema na insuficiência cardíaca."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material classifica a Pioglitazona como sensibilizadora de insulina e ressalta edema, retenção e piora da IC como alertas. Por isso, em paciente com insuficiência cardíaca, o risco deve ser considerado na decisão.",
+    "erros": {
+      "1": "O edema não guarda relação com Pioglitazona; o fármaco tem efeito exclusivamente neurológico.",
+      "2": "Pioglitazona promove intensa natriurese e seu efeito esperado é reduzir volume intravascular.",
+      "3": "Pioglitazona é diurético de alça e, portanto, tende a reduzir edema na insuficiência cardíaca."
+    }
+  },
+  {
+    "caso": "Uma paciente em uso de Empagliflozina permanece em jejum após cirurgia e desenvolve náuseas, dor abdominal e taquipneia. A glicemia capilar é de 185 mg/dL.",
+    "pergunta": "Qual hipótese deve ser priorizada?",
+    "alts": [
+      "Cetoacidose diabética euglicêmica associada ao iSGLT2; a glicemia relativamente baixa não exclui cetonemia e acidose.",
+      "Hipoglicemia isolada, pois qualquer glicemia abaixo de 250 mg/dL exclui cetoacidose.",
+      "Apenas intolerância gastrointestinal à Empagliflozina, sem necessidade de investigar cetonas.",
+      "Hiperglicemia hiperosmolar, necessariamente acompanhada de glicemia muito elevada."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material descreve a CAD euglicêmica como risco do uso de iSGLT2 em jejum prolongado, doença aguda ou cirurgia. A glicosúria pode manter a glicemia <250 mg/dL enquanto a cetogênese progride. Deve-se investigar cetonas, eletrólitos, bicarbonato e gasometria conforme gravidade.",
+    "erros": {
+      "1": "Hipoglicemia isolada, pois qualquer glicemia abaixo de 250 mg/dL exclui cetoacidose.",
+      "2": "Apenas intolerância gastrointestinal à Empagliflozina, sem necessidade de investigar cetonas.",
+      "3": "Hiperglicemia hiperosmolar, necessariamente acompanhada de glicemia muito elevada."
+    }
+  },
+  {
+    "caso": "Uma mulher com hipotireoidismo está em uso estável de Levotiroxina. Após iniciar suplemento de cálcio e ferro, ela passa a tomar todos os comprimidos juntos pela manhã. O TSH sobe e o T4 livre se aproxima do limite inferior.",
+    "pergunta": "Qual orientação corrige o problema mais diretamente?",
+    "alts": [
+      "Suspender definitivamente a Levotiroxina e substituir por T3 em todos os pacientes.",
+      "Tomar Levotiroxina com água, em jejum, idealmente 30–60 minutos antes do café, e separar cálcio e ferro por pelo menos 4 horas.",
+      "Aumentar imediatamente a dose de Levotiroxina sem revisar o horário e os interferentes.",
+      "Tomar Levotiroxina junto com cálcio e ferro para aumentar a absorção por complexação."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material destaca que cálcio e ferro formam complexos insolúveis com a Levotiroxina e reduzem sua biodisponibilidade. Antes de simplesmente aumentar a dose, deve-se corrigir a administração e separar os interferentes por pelo menos 4 horas, reavaliando TSH após tempo farmacocinético adequado.",
+    "erros": {
+      "0": "Suspender definitivamente a Levotiroxina e substituir por T3 em todos os pacientes.",
+      "2": "Aumentar imediatamente a dose de Levotiroxina sem revisar o horário e os interferentes.",
+      "3": "Tomar Levotiroxina junto com cálcio e ferro para aumentar a absorção por complexação."
+    }
+  },
+  {
+    "caso": "Um paciente com hipotireoidismo primário teve a dose de Levotiroxina modificada há apenas duas semanas. Ele está ansioso porque o TSH ainda não foi repetido e pergunta se já é possível ajustar novamente.",
+    "pergunta": "Qual conduta é mais coerente com a farmacocinética do T4?",
+    "alts": [
+      "Ajustar semanalmente até normalizar o TSH, independentemente do intervalo entre as medidas.",
+      "Repetir o TSH no mesmo dia da mudança, pois a Levotiroxina altera o marcador em poucas horas.",
+      "Aguardar em geral 6–8 semanas após a mudança para reavaliar o TSH, porque o T4 tem meia-vida longa e o marcador demora semanas para refletir um novo estado estável.",
+      "Utilizar cortisol sérico como principal marcador da resposta à Levotiroxina."
+    ],
+    "c": 2,
+    "exp": "<b>Raciocínio:</b> a aula ressalta que a Levotiroxina possui meia-vida longa, o TSH responde em semanas e, após mudança de dose, a reavaliação costuma ocorrer em 6–8 semanas. Ajustes precoces podem confundir o período de estabilização com falha terapêutica.",
+    "erros": {
+      "0": "Ajustar semanalmente até normalizar o TSH, independentemente do intervalo entre as medidas.",
+      "1": "Repetir o TSH no mesmo dia da mudança, pois a Levotiroxina altera o marcador em poucas horas.",
+      "3": "Utilizar cortisol sérico como principal marcador da resposta à Levotiroxina."
+    }
+  },
+  {
+    "caso": "Uma mulher de 72 anos com hipotireoidismo manifesto e doença coronariana apresenta TSH de 32 mUI/L e T4 livre baixo. O residente propõe iniciar imediatamente uma dose plena calculada apenas pelo peso.",
+    "pergunta": "Qual princípio de segurança deve orientar a primeira prescrição?",
+    "alts": [
+      "A idade e a doença coronariana permitem começar com dose plena, pois aumentam a necessidade de hormônio.",
+      "A dose inicial deve ser definida apenas pelo peso, sem considerar reserva cardiovascular.",
+      "A principal preocupação é evitar hipoglicemia, pois Levotiroxina reduz diretamente a glicemia.",
+      "Em pessoa idosa/coronariopata, iniciar com dose baixa de Levotiroxina e titular gradualmente, porque reposição abrupta pode elevar o consumo miocárdico de oxigênio e precipitar angina ou arritmia."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> a aula destaca que o risco cardiovascular modifica a velocidade da reposição. Em idosos ou coronariopatas, a referência didática é começar baixo, por exemplo 25–50 µg/dia, e titular com cautela, observando angina, arritmia, dispneia e outros sinais de excesso.",
+    "erros": {
+      "0": "A idade e a doença coronariana permitem começar com dose plena, pois aumentam a necessidade de hormônio.",
+      "1": "A dose inicial deve ser definida apenas pelo peso, sem considerar reserva cardiovascular.",
+      "2": "A principal preocupação é evitar hipoglicemia, pois Levotiroxina reduz diretamente a glicemia."
+    }
+  },
+  {
+    "caso": "Uma paciente apresenta palpitações e tremor com hormônios tireoidianos elevados. A equipe ainda não sabe se há aumento da síntese hormonal ou liberação de hormônio pré-formado por tireoidite.",
+    "pergunta": "Qual princípio de tratamento é mais adequado enquanto a etiologia é esclarecida?",
+    "alts": [
+      "Tionamida deve ser usada obrigatoriamente em toda tireotoxicose, inclusive quando não há síntese aumentada.",
+      "Betabloqueador pode aliviar tremor e palpitação; tionamida é voltada à redução da síntese e é útil quando há hipertireoidismo por síntese aumentada, como em Graves.",
+      "O tratamento não depende da etiologia, porque tireoidite e Graves possuem o mesmo mecanismo.",
+      "Betabloqueador reduz diretamente a síntese hormonal e substitui toda terapia etiológica."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material orienta primeiro diferenciar tireotoxicose transitória de hipertireoidismo por síntese aumentada. Betabloqueador é usado para controle sintomático. Metimazol/tiamazol inibe a tireoperoxidase e reduz organificação e acoplamento, sendo útil quando há síntese aumentada.",
+    "erros": {
+      "0": "Tionamida deve ser usada obrigatoriamente em toda tireotoxicose, inclusive quando não há síntese aumentada.",
+      "2": "O tratamento não depende da etiologia, porque tireoidite e Graves possuem o mesmo mecanismo.",
+      "3": "Betabloqueador reduz diretamente a síntese hormonal e substitui toda terapia etiológica."
+    }
+  },
+  {
+    "caso": "Um homem com Graves em uso de Metimazol procura atendimento por febre e dor de garganta iniciadas recentemente.",
+    "pergunta": "Qual conduta decorre do alerta de segurança apresentado no material?",
+    "alts": [
+      "Suspender a tionamida e solicitar hemograma para investigar agranulocitose, além de avaliar hepatotoxicidade conforme o contexto.",
+      "Trocar imediatamente para Levotiroxina sem avaliação, pois toda febre representa hipotireoidismo.",
+      "Manter a tionamida e dobrar a dose, pois febre é sinal esperado de resposta terapêutica.",
+      "Ignorar a odinofagia, porque agranulocitose é impossível com Metimazol."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material enfatiza que febre e dor de garganta durante uso de tionamida são sinais de alerta para agranulocitose, evento raro mas potencialmente grave. A orientação didática é suspender e solicitar hemograma. Hepatotoxicidade também requer vigilância.",
+    "erros": {
+      "1": "Trocar imediatamente para Levotiroxina sem avaliação, pois toda febre representa hipotireoidismo.",
+      "2": "Manter a tionamida e dobrar a dose, pois febre é sinal esperado de resposta terapêutica.",
+      "3": "Ignorar a odinofagia, porque agranulocitose é impossível com Metimazol."
+    }
+  },
+  {
+    "caso": "Uma pessoa com insuficiência adrenal primária usa Hidrocortisona e apresenta sintomas posturais. O médico discute se a reposição deve incluir outro hormônio e qual parâmetro usar no seguimento.",
+    "pergunta": "Qual alternativa está de acordo com o material?",
+    "alts": [
+      "A Hidrocortisona deve ser sempre administrada em dose maior à tarde para reproduzir o ritmo fisiológico.",
+      "Na insuficiência adrenal primária, pode ser necessário adicionar Fludrocortisona para deficiência mineralocorticoide; o ajuste usa pressão arterial, sintomas posturais, sódio, potássio e renina.",
+      "Cortisol sérico isolado deve ser o principal alvo rotineiro para titular Hidrocortisona crônica.",
+      "A insuficiência adrenal primária nunca exige reposição mineralocorticoide."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material diferencia a reposição glicocorticoide da mineralocorticoide. Na doença primária, Fludrocortisona pode ser necessária. O ajuste é orientado por clínica, PA, sintomas posturais, sódio, potássio e renina; cortisol isolado não é o alvo rotineiro. A Hidrocortisona deve respeitar o ritmo, com maior dose ao despertar.",
+    "erros": {
+      "0": "A Hidrocortisona deve ser sempre administrada em dose maior à tarde para reproduzir o ritmo fisiológico.",
+      "2": "Cortisol sérico isolado deve ser o principal alvo rotineiro para titular Hidrocortisona crônica.",
+      "3": "A insuficiência adrenal primária nunca exige reposição mineralocorticoide."
+    }
+  },
+  {
+    "caso": "Um paciente com insuficiência adrenal chega ao pronto-socorro com vômitos, PA de 80/50 mmHg, hipoglicemia e hipercalemia. A equipe ainda aguarda exames hormonais.",
+    "pergunta": "Qual deve ser a prioridade imediata?",
+    "alts": [
+      "Administrar apenas Fludrocortisona por via oral e observar a resposta antes de hidratar.",
+      "Administrar Hidrocortisona 100 mg IV/IM e iniciar reposição volêmica com soro, corrigindo hipoglicemia e eletrólitos conforme a gravidade, sem atrasar o tratamento para aguardar exames.",
+      "Iniciar Levotiroxina em dose alta, pois hipoglicemia é manifestação primária de hipotireoidismo.",
+      "Aguardar o resultado do cortisol antes de iniciar qualquer glicocorticoide."
+    ],
+    "c": 1,
+    "exp": "<b>Raciocínio:</b> o material define a crise adrenal como emergência em que o tratamento não deve esperar o laboratório. A primeira medida é Hidrocortisona parenteral, associada a reposição volêmica; hipoglicemia e distúrbios eletrolíticos devem ser corrigidos e o gatilho investigado.",
+    "erros": {
+      "0": "Administrar apenas Fludrocortisona por via oral e observar a resposta antes de hidratar.",
+      "2": "Iniciar Levotiroxina em dose alta, pois hipoglicemia é manifestação primária de hipotireoidismo.",
+      "3": "Aguardar o resultado do cortisol antes de iniciar qualquer glicocorticoide."
+    }
+  },
+  {
+    "caso": "Um homem com esquizofrenia em uso de Haloperidol chega ao pronto-socorro com febre de 40°C, rigidez muscular intensa em \"cano de chumbo\", alteração do nível de consciência, diaforese, taquicardia e CK de 10.000 U/L.",
+    "pergunta": "Qual diagnóstico e conduta estão mais alinhados ao material?",
+    "alts": [
+      "Distonia aguda; manter o antipsicótico e oferecer apenas anti-histamínico.",
+      "Síndrome de abstinência; reiniciar Haloperidol em dose maior para estabilizar o quadro.",
+      "Síndrome serotoninérgica; manter Haloperidol e tratar apenas com antitérmico comum.",
+      "Síndrome neuroléptica maligna; suspender imediatamente o antipsicótico, iniciar resfriamento e hidratação vigorosos e, em casos graves, considerar Bromocriptina ou Dantrolene."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material diferencia SNM de síndrome serotoninérgica. Na SNM, o quadro se desenvolve ao longo de dias a semanas, com rigidez em cano de chumbo, reflexos diminuídos, hipertermia, disautonomia e CK muito elevada. A conduta é retirar o agente, oferecer suporte intensivo, resfriamento e hidratação; casos graves podem receber Bromocriptina ou Dantrolene.",
+    "erros": {
+      "0": "Distonia aguda; manter o antipsicótico e oferecer apenas anti-histamínico.",
+      "1": "Síndrome de abstinência; reiniciar Haloperidol em dose maior para estabilizar o quadro.",
+      "2": "Síndrome serotoninérgica; manter Haloperidol e tratar apenas com antitérmico comum."
+    }
+  },
+  {
+    "caso": "Uma mulher de 78 anos usa Diazepam diariamente há anos. A família relata sonolência, ataxia, prejuízo cognitivo e duas quedas recentes. Não há evidência de uma emergência aguda que exija manutenção imediata do benzodiazepínico.",
+    "pergunta": "Qual estratégia está mais de acordo com o material?",
+    "alts": [
+      "Planejar desprescrição gradual (tapering), associada a medidas não farmacológicas e tratamento dirigido da ansiedade ou insônia, devido ao risco de sedação, quedas e prejuízo cognitivo em idosos.",
+      "Suspender abruptamente o Diazepam no mesmo dia para evitar qualquer risco de dependência futura.",
+      "Manter a dose indefinidamente porque benzodiazepínicos não produzem sedação ou risco de quedas em idosos.",
+      "Aumentar a dose noturna para melhorar o sono e reduzir a necessidade de outras medicações."
+    ],
+    "c": 0,
+    "exp": "<b>Raciocínio:</b> o material associa uso crônico de benzodiazepínicos em idosos a sedação, ataxia, quedas, fraturas e prejuízo cognitivo. A estratégia é retirada gradual, não abrupta, combinada a medidas não farmacológicas e tratamento específico. O material orienta evitar Flumazenil como solução de rotina para uso crônico.",
+    "erros": {
+      "1": "Suspender abruptamente o Diazepam no mesmo dia para evitar qualquer risco de dependência futura.",
+      "2": "Manter a dose indefinidamente porque benzodiazepínicos não produzem sedação ou risco de quedas em idosos.",
+      "3": "Aumentar a dose noturna para melhorar o sono e reduzir a necessidade de outras medicações."
+    }
+  },
+  {
+    "caso": "Uma mulher de 65 anos com fibrilação atrial e hipotireoidismo usa Varfarina e Levotiroxina. Para osteopenia, inicia cálcio; para dor neuropática, inicia Carbamazepina. Algumas semanas depois, o TSH sobe e o INR cai em relação aos valores habituais.",
+    "pergunta": "Qual interpretação reúne corretamente os dois achados?",
+    "alts": [
+      "O cálcio eleva o TSH por aumentar a atividade da tireoide, enquanto a Carbamazepina reduz o INR por bloquear a P-gp da Varfarina.",
+      "Ambas as alterações são causadas por inibição enzimática rápida, com aumento simultâneo de concentração dos dois fármacos.",
+      "O cálcio induz CYP e reduz o INR; a Carbamazepina aumenta a absorção da Levotiroxina e reduz o TSH.",
+      "O cálcio reduz a absorção da Levotiroxina, elevando o TSH, enquanto a Carbamazepina, como indutor enzimático, aumenta a depuração da Varfarina e reduz o INR."
+    ],
+    "c": 3,
+    "exp": "<b>Raciocínio:</b> o material reúne dois mecanismos distintos. Cálcio forma complexos insolúveis com Levotiroxina no trato gastrointestinal e reduz sua biodisponibilidade, levando à elevação do TSH. Carbamazepina é indutora enzimática, aumentando a depuração de fármacos como a Varfarina e reduzindo sua exposição e o INR. A resposta exige corrigir a rotina da Levotiroxina e monitorar o INR após a mudança do indutor.",
+    "erros": {
+      "0": "O cálcio eleva o TSH por aumentar a atividade da tireoide, enquanto a Carbamazepina reduz o INR por bloquear a P-gp da Varfarina.",
+      "1": "Ambas as alterações são causadas por inibição enzimática rápida, com aumento simultâneo de concentração dos dois fármacos.",
+      "2": "O cálcio induz CYP e reduz o INR; a Carbamazepina aumenta a absorção da Levotiroxina e reduz o TSH."
+    }
+  }
+]
+;
+
+/* =========================================================
+   ESTADO + PERSISTÊNCIA (localStorage)
+   ========================================================= */
+const KEY = "simuladoFarmacologiaClinica_50q_v2";
+const LET = ["A","B","C","D"];
+let mapFilter = "all";
+
+function fresh(){ return {view:"start", cur:0, ans:{}, subset:null}; }
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return fresh();
+    const d = JSON.parse(raw);
+    if(!d || typeof d !== "object" || typeof d.ans !== "object") return fresh();
+    const s = Object.assign(fresh(), d);
+    s.cur = Math.min(Math.max(0, parseInt(s.cur,10)||0), Q.length-1);
+    Object.keys(s.ans).forEach(k=>{ const v=s.ans[k]; if(!(k in Q) || typeof v!=="number" || v<0 || v>3) delete s.ans[k]; });
+    if(s.subset && (!Array.isArray(s.subset) || !s.subset.length)) s.subset = null;
+    return s;
+  }catch(e){ return fresh(); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S = load();
+
+const allIdx = () => Q.map((_,i)=>i);
+const list = () => (S.subset && S.subset.length) ? S.subset : allIdx();
+const posInList = () => { const p = list().indexOf(S.cur); return p<0 ? 0 : p; };
+const status = i => S.ans[i]===undefined ? "blank" : (S.ans[i]===Q[i].c ? "ok" : "err");
+const pad = n => String(n).padStart(2,"0");
+
+/* =========================================================
+   RENDER
+   ========================================================= */
+const $ = id => document.getElementById(id);
+
+function show(view){
+  S.view = view; save();
+  ["vStart","vQuiz","vResult"].forEach(v=>$(v).classList.remove("on"));
+  $({start:"vStart",quiz:"vQuiz",result:"vResult"}[view]).classList.add("on");
+  closeMap();
+  if(view==="start") renderStart();
+  if(view==="quiz") renderQ();
+  if(view==="result") renderResult();
+  renderTop();
+  window.scrollTo(0,0);
+}
+
+function renderTop(){
+  const l = list();
+  if(S.view==="quiz"){
+    $("counter").innerHTML = `<strong>${pad(posInList()+1)}</strong>/${pad(l.length)}`;
+  } else {
+    $("counter").innerHTML = `<strong>${pad(Object.keys(S.ans).length)}</strong>/${pad(Q.length)}`;
+  }
+  const answered = l.filter(i=>S.ans[i]!==undefined).length;
+  $("prog").style.width = (answered/l.length*100)+"%";
+  $("btnFinish").textContent = S.view==="result" ? "Resultado" : "Finalizar";
+}
+
+function renderStart(){
+  const n = Object.keys(S.ans).length;
+  $("stTotal").textContent = Q.length;
+  $("stDone").textContent = n;
+  $("btnStart").textContent = n>0 ? "Continuar" : "Iniciar";
+  $("btnRestartFromStart").style.display = n>0 ? "inline-flex" : "none";
+}
+
+function renderQ(){
+  const i = S.cur, q = Q[i], a = S.ans[i];
+  $("qNum").innerHTML = `Questão ${pad(i+1)} <em>/ ${pad(Q.length)}</em>`;
+  $("modeTag").style.display = S.subset ? "inline" : "none";
+  $("qCase").textContent = q.caso;
+  $("qAsk").textContent = q.pergunta;
+
+  const box = $("qOpts"); box.innerHTML = "";
+  q.alts.forEach((t,k)=>{
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.setAttribute("aria-label", `Alternativa ${LET[k]}: ${t}`);
+    b.innerHTML = `<span class="k">${LET[k]}</span><span class="t"></span>`;
+    b.querySelector(".t").textContent = t;
+    if(a!==undefined){
+      b.disabled = true;
+      if(k===q.c) b.classList.add("correct");
+      else if(k===a) b.classList.add("wrong");
+      else b.classList.add("faded");
+    } else {
+      b.addEventListener("click",()=>answer(k));
+    }
+    box.appendChild(b);
+  });
+
+  const fb = $("fb");
+  if(a===undefined){ fb.classList.remove("on"); fb.innerHTML=""; }
+  else{
+    const ok = a===q.c;
+    let items = "";
+    for(let k=0;k<4;k++){
+      if(k===q.c) continue;
+      items += `<li><span class="k">${LET[k]}</span><span>${q.erros[k]||""}</span></li>`;
+    }
+    fb.innerHTML =
+      `<div class="fb-status ${ok?"ok":"err"}"><span class="dot"></span>${ok?"Resposta correta":"Resposta incorreta"}<span class="gab">gabarito ${LET[q.c]}${ok?"":" | sua resposta "+LET[a]}</span></div>`+
+      `<div class="fb-block"><h4>Explicação</h4><p>${q.exp}</p></div>`+
+      `<div class="fb-block"><h4>Análise das alternativas</h4><ul class="fb-list">${items}</ul></div>`;
+    fb.classList.add("on");
+  }
+
+  const p = posInList(), l = list();
+  $("btnPrev").disabled = p===0;
+  $("btnNext").textContent = p===l.length-1 ? "Ver resultado" : "Próxima";
+  renderTop();
+  if(isMapOpen()) renderMap();
+}
+
+function answer(k){
+  if(S.view!=="quiz" || S.ans[S.cur]!==undefined) return;
+  S.ans[S.cur] = k; save();
+  renderQ();
+  setTimeout(()=>{
+    const fb=$("fb"); const r=fb.getBoundingClientRect();
+    if(r.top > window.innerHeight*0.75){
+      const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      fb.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});
+    }
+  },40);
+}
+
+function go(delta){
+  const l = list(); const p = posInList() + delta;
+  if(p<0) return;
+  if(p>=l.length){ requestFinish(); return; }
+  S.cur = l[p]; save(); renderQ(); window.scrollTo(0,0);
+}
+function goTo(i){
+  if(S.subset && !S.subset.includes(i)) S.subset = null;
+  S.cur = i; save(); closeMap();
+  if(S.view!=="quiz") show("quiz"); else { renderQ(); window.scrollTo(0,0); }
+}
+
+/* ---------- Resultado ---------- */
+function tally(){
+  let ok=0, err=0, blank=0;
+  Q.forEach((_,i)=>{ const s=status(i); if(s==="ok")ok++; else if(s==="err")err++; else blank++; });
+  return {ok,err,blank};
+}
+function renderResult(){
+  const t = tally(), pct = Math.round(t.ok/Q.length*100);
+  $("rPct").innerHTML = `${pct}<small>%</small>`;
+  $("rOk").textContent = t.ok; $("rErr").textContent = t.err; $("rBlank").textContent = t.blank;
+  $("rBar").innerHTML = `<i style="width:${t.ok/Q.length*100}%;background:var(--ok)"></i><i style="width:${t.err/Q.length*100}%;background:var(--err)"></i>`;
+  let v;
+  if(pct>=80) v = "Desempenho sólido. Revise as questões erradas para consolidar o raciocínio.";
+  else if(pct>=60) v = "Bom caminho. Refaça as erradas e releia as explicações dos temas com dúvida.";
+  else v = "Vale revisar os conceitos-base e refazer as questões erradas antes de um novo simulado.";
+  if(t.blank>0) v += ` Ficaram ${t.blank} ${t.blank===1?"questão":"questões"} em branco.`;
+  $("rVerdict").textContent = v;
+  $("btnRedo").disabled = t.err===0;
+}
+function requestFinish(){
+  const t = tally();
+  const done = ()=>{ S.subset = null; show("result"); };
+  if(t.blank>0){
+    confirmBox("Finalizar simulado?",
+      `Há ${t.blank} ${t.blank===1?"questão":"questões"} em branco. Elas serão contadas como não respondidas.`,
+      "Finalizar", done);
+  } else done();
+}
+
+/* ---------- Mapa ---------- */
+function isMapOpen(){ return $("map").classList.contains("open"); }
+function toggleMap(){ isMapOpen() ? closeMap() : openMap(); }
+function openMap(){ renderMap(); $("map").classList.add("open"); $("btnMap").setAttribute("aria-expanded","true"); }
+function closeMap(){ $("map").classList.remove("open"); $("btnMap").setAttribute("aria-expanded","false"); }
+function renderMap(){
+  const g = $("mapGrid"); g.innerHTML = "";
+  let shown = 0;
+  Q.forEach((q,i)=>{
+    const s = status(i);
+    if(mapFilter==="wrong" && s!=="err") return;
+    if(mapFilter==="blank" && s!=="blank") return;
+    shown++;
+    const b = document.createElement("button");
+    b.className = "cell" + (s==="ok"?" ok":s==="err"?" err":"") +
+      (S.view==="quiz" && i===S.cur ? " cur" : "") +
+      (S.subset && !S.subset.includes(i) ? " dim" : "");
+    b.textContent = pad(i+1);
+    b.title = `Questão ${pad(i+1)}`;
+    b.addEventListener("click",()=>goTo(i));
+    g.appendChild(b);
+  });
+  if(!shown){
+    g.innerHTML = `<div class="map-empty" style="grid-column:1/-1">${mapFilter==="wrong"?"Nenhuma questão errada.":"Nenhuma questão em branco."}</div>`;
+  }
+  document.querySelectorAll(".chip").forEach(c=>c.classList.toggle("on", c.dataset.f===mapFilter));
+}
+
+/* ---------- Modal de confirmação ---------- */
+let modalCb = null;
+function confirmBox(title, text, okLabel, cb, danger){
+  $("mTitle").textContent = title; $("mText").textContent = text;
+  const ok = $("mOk"); ok.textContent = okLabel;
+  ok.className = "btn " + (danger ? "danger" : "primary");
+  modalCb = cb; closeMap();
+  $("modal").classList.add("open"); ok.focus();
+}
+function closeModal(){ $("modal").classList.remove("open"); modalCb = null; }
+const modalOpen = () => $("modal").classList.contains("open");
+
+function resetAll(){ S = fresh(); mapFilter = "all"; save(); show("start"); }
+
+/* =========================================================
+   EVENTOS
+   ========================================================= */
+$("btnStart").addEventListener("click",()=>{
+  const l = list();
+  if(!l.includes(S.cur)) S.cur = l[0];
+  if(S.ans[S.cur]!==undefined){
+    const firstBlank = l.find(i=>S.ans[i]===undefined);
+    if(firstBlank!==undefined) S.cur = firstBlank;
+  }
+  show("quiz");
+});
+$("btnRestartFromStart").addEventListener("click",()=>confirmBox("Começar do zero?","Todas as respostas salvas serão apagadas.","Apagar e recomeçar",resetAll,true));
+$("btnHome").addEventListener("click",()=>show("start"));
+$("btnMap").addEventListener("click",e=>{ e.stopPropagation(); toggleMap(); });
+$("btnReset").addEventListener("click",()=>confirmBox("Reiniciar simulado?","Todas as respostas e o progresso salvo serão apagados.","Reiniciar",resetAll,true));
+$("btnFinish").addEventListener("click",()=>{ if(S.view==="result") return; requestFinish(); });
+$("btnPrev").addEventListener("click",()=>go(-1));
+$("btnNext").addEventListener("click",()=>go(1));
+$("btnReview").addEventListener("click",()=>{ S.subset = null; S.cur = 0; show("quiz"); });
+$("btnRedo").addEventListener("click",()=>{
+  const wrong = allIdx().filter(i=>status(i)==="err");
+  if(!wrong.length) return;
+  wrong.forEach(i=>{ delete S.ans[i]; });
+  S.subset = wrong; S.cur = wrong[0]; show("quiz");
+});
+$("btnResHome").addEventListener("click",()=>show("start"));
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",e=>{ e.stopPropagation(); mapFilter = c.dataset.f; renderMap(); }));
+$("map").addEventListener("click",e=>e.stopPropagation());
+document.addEventListener("click",()=>{ if(isMapOpen()) closeMap(); });
+$("mCancel").addEventListener("click",closeModal);
+$("mOk").addEventListener("click",()=>{ const cb = modalCb; closeModal(); if(cb) cb(); });
+$("modal").addEventListener("click",e=>{ if(e.target.id==="modal") closeModal(); });
+
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = e.key;
+  if(modalOpen()){
+    if(k==="Escape"){ e.preventDefault(); closeModal(); }
+    else if(k==="Enter"){ e.preventDefault(); $("mOk").click(); }
+    return;
+  }
+  if(k==="Escape" && isMapOpen()){ closeMap(); return; }
+  if(S.view==="start"){
+    if(k==="Enter"){ e.preventDefault(); $("btnStart").click(); }
+    return;
+  }
+  if(k==="m" || k==="M"){ e.preventDefault(); toggleMap(); return; }
+  if(S.view!=="quiz") return;
+  const up = k.length===1 ? k.toUpperCase() : "";
+  if(LET.includes(up)){ e.preventDefault(); answer(LET.indexOf(up)); return; }
+  if(k==="ArrowRight"){ e.preventDefault(); go(1); return; }
+  if(k==="ArrowLeft"){ e.preventDefault(); go(-1); return; }
+  if(k==="Enter"){
+    const t = document.activeElement;
+    // Se o foco estiver num botão da interface (exceto alternativas/Próxima), deixa o botão agir
+    if(t && t.tagName==="BUTTON" && !t.classList.contains("opt") && t.id!=="btnNext") return;
+    e.preventDefault(); go(1);
+  }
+});
+
+/* Inicialização */
+show(["start","quiz","result"].includes(S.view) ? S.view : "start");
+</script>
+</body>
+</html>
